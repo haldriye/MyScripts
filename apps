@@ -1,0 +1,373 @@
+#!/bin/bash
+
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd -P)
+
+function echo-color-red {
+    echo -e "\n\e[41m\e[1m $1 \e[0m\e[0m \n"
+}
+
+if [ ! -f apps.config ] ; then
+   echo-color-red "Missing config 'apps.config'. Please copy it from .dist file."
+   exit 1
+else
+   . apps.config
+fi
+
+function check-variables {
+    if [ -z "$ENV_TYPE" ] ||
+    [ -z "$GIT_UPDATE" ] ||
+    [ -z "$DEBUG" ] ||
+    [ -z "$DOCKER_TAIL_LOG" ] ||
+    [ -z "$DOCKER_DIR" ] ||
+    [ -z "$SSH_AUTH" ] ||
+    [ -z "$XSOLVE_GITHUB_USER" ] ||
+    [ -z "$GIT_DEVELOP_BRANCH" ] ||
+    [ -z "$XSOLVE_GITHUB_REPOSITORY_NAME" ] ||
+    [ -z "$TAKAMOL_EG_API_DIR" ] ||
+    [ -z "$TAKAMOL_EG_SPA_DIR" ] ||
+    [ -z "$TAKAMOL_CA_API_DIR" ] ||
+    [ -z "$TAKAMOL_CA_SPA_DIR" ] ||
+    [ -z "$TAKAMOL_EG_MOCKS_DIR" ]; then
+        echo
+        echo-color-red "Please fill script variables in 'apps.config' file"
+        if [ -z "$ENV_TYPE" ]; then
+            echo-color-red "-> ENV_TYPE"
+        fi
+        if [ -z "$GIT_UPDATE" ]; then
+            echo-color-red "-> GIT_UPDATE"
+        fi
+        if [ -z "$DEBUG" ]; then
+            echo-color-red "-> DEBUG"
+        fi
+        if [ -z "$DOCKER_TAIL_LOG" ]; then
+            echo-color-red "-> DOCKER_TAIL_LOG"
+        fi
+        if [ -z "$DOCKER_DIR" ]; then
+            echo-color-red "-> DOCKER_DIR"
+        fi
+        if [ -z "$SSH_AUTH" ]; then
+            echo-color-red "-> SSH_AUTH"
+        fi
+        if [ -z "$XSOLVE_GITHUB_USER" ]; then
+            echo-color-red "-> XSOLVE_GITHUB_USER"
+        fi
+        if [ -z "$GIT_DEVELOP_BRANCH" ]; then
+            echo-color-red "-> GIT_DEVELOP_BRANCH"
+        fi
+        if [ -z "$XSOLVE_GITHUB_REPOSITORY_NAME" ]; then
+            echo-color-red "-> XSOLVE_GITHUB_REPOSITORY_NAME"
+        fi
+        if [ -z "$TAKAMOL_EG_API_DIR" ]; then
+            echo-color-red "-> TAKAMOL_EG_API_DIR"
+        fi
+        if [ -z "$TAKAMOL_EG_SPA_DIR" ]; then
+            echo-color-red "-> TAKAMOL_EG_SPA_DIR"
+        fi
+        if [ -z "$TAKAMOL_CA_API_DIR" ]; then
+            echo-color-red "-> TAKAMOL_CA_API_DIR"
+        fi
+        if [ -z "$TAKAMOL_CA_SPA_DIR" ]; then
+            echo-color-red "-> TAKAMOL_CA_SPA_DIR"
+        fi
+        if [ -z "$TAKAMOL_EG_MOCKS_DIR" ]; then
+            echo-color-red "-> TAKAMOL_EG_MOCKS_DIR"
+        fi
+        if [ -z "$TAKAMOL_EG_API_REPO_NAME" ]; then
+            echo-color-red "-> TAKAMOL_EG_API_REPO_NAME"
+        fi
+        if [ -z "$TAKAMOL_EG_SPA_REPO_NAME" ]; then
+            echo-color-red "-> TAKAMOL_EG_SPA_REPO_NAME"
+        fi
+        if [ -z "$TAKAMOL_CA_API_REPO_NAME" ]; then
+            echo-color-red "-> TAKAMOL_CA_API_REPO_NAME"
+        fi
+        if [ -z "$TAKAMOL_CA_SPA_REPO_NAME" ]; then
+            echo-color-red "-> TAKAMOL_CA_SPA_REPO_NAME"
+        fi
+        if [ -z "$TAKAMOL_EG_MOCKS_REPO_NAME" ]; then
+            echo-color-red "-> TAKAMOL_EG_MOCKS_REPO_NAME"
+        fi
+        echo
+        exit 1
+    fi
+}
+
+function help {
+    echo
+    echo "USAGE"
+    echo
+    echo "1. Init GitHub repositories:"
+    echo
+    echo "./"$(basename $0) "git-init"
+    echo
+    echo "2. Run application or different kind:"
+    echo
+    echo "./"$(basename $0) "spa|api|mocks app_directory_path/ run"
+    echo
+    echo "3. Upgrade and run application or different kind:"
+    echo
+    echo "./"$(basename $0) "spa|api|mocks app_directory_path/ upgrade"
+    echo
+    echo "4. Run docker-compose command on all application at once"
+    echo
+    echo "./"$(basename $0) "exec <ps|up|etc>"
+    echo
+}
+
+function execute {
+    check-variables
+    echo -e "\n\e[44m\e[39m\e[1m-> Executing:\e[0m\e[0m\e[0m\e[100m\e[33m ${1} \e[0m\e[0m \n"
+
+    if [ ${DEBUG} -eq 1 ] ;then
+        echo "$1"
+    else
+        eval $1
+    fi
+
+    if [ $? -ne 0 ] ;then
+        echo-color-red "Non zero exit code - aborting!"
+        exit 1
+    fi
+}
+
+function execute-if {
+    check-variables
+    if [ $1 -eq 1 ] ;then
+        execute "$2"
+    fi
+}
+
+
+# API
+function run_api {
+    execute "cd ${APP_PATH}/${DOCKER_DIR}"
+    # Conditional if docker-compose.yml exists exec:
+    execute "test -f docker-compose.yml && docker-compose down || echo '[OK] docker-compose.yml not found. Probably not build yet.'"
+#    execute "test -f  .env && rm -f .env || echo 'Ok. File not present'"
+#    execute "cp .env.${ENV_TYPE}.dist .env"
+    execute "test -f docker-compose.yml && rm -f docker-compose.yml || echo 'Ok. File not present'"
+    execute "cp docker-compose.dev.yml docker-compose.yml"
+    execute "test -f ../app/config/parameters.yml && rm -f ../app/config/parameters.yml || echo 'Ok. File not present'"
+    execute "cp ../app/config/parameters.${ENV_TYPE}.yml ../app/config/parameters.yml"
+    # Conditional if build.lock exist remove it
+    execute "test -f ../build.lock  && rm -f ../build.lock || echo '[OK] build.lock not found. Probably not build yet.'"
+    execute "docker-compose build"
+    execute "docker-compose up -d"
+    execute-if ${DOCKER_TAIL_LOG} "docker-compose logs -f --tail=100"
+}
+
+function api {
+    execute "cd ${APP_PATH}"
+    execute-if ${GIT_UPDATE} "git fetch --all"
+    execute-if ${GIT_UPDATE} "git checkout develop"
+    execute-if ${GIT_UPDATE} "git pull ${XSOLVE_GITHUB_REPOSITORY_NAME} develop"
+    execute "cd .."
+    run_api
+}
+
+
+# Mocks
+function run_mocks {
+    execute "cd ${APP_PATH}/${DOCKER_DIR}"
+    # Conditional if docker-compose.yml exists exec:
+    execute "test -f docker-compose.yml && docker-compose down || echo '[OK] docker-compose.yml not found. Probably not build yet.'"
+#    execute "test -f  .env && rm -f .env || echo 'Ok. File not present'"
+#    execute "cp .env.${ENV_TYPE}.dist .env"
+    execute "test -f docker-compose.yml && rm -f docker-compose.yml || echo 'Ok. File not present'"
+    execute "cp docker-compose.dev.yml docker-compose.yml"
+    execute "test -f ../app/config/parameters.yml && rm -f ../app/config/parameters.yml || echo 'Ok. File not present'"
+    execute "cp ../app/config/parameters.${ENV_TYPE}.yml ../app/config/parameters.yml"
+    # Conditional if build.lock exist remove it
+    execute "test -f ../build.lock  && rm -f ../build.lock || echo '[OK] build.lock not found. Probably not build yet.'"
+    execute "docker-compose build"
+    execute "docker-compose up -d"
+    execute-if ${DOCKER_TAIL_LOG} "docker-compose logs -f --tail=100"
+}
+
+function mocks {
+    execute "cd ${APP_PATH}"
+    execute-if ${GIT_UPDATE} "git fetch --all"
+    execute-if ${GIT_UPDATE} "git checkout develop"
+    execute-if ${GIT_UPDATE} "git pull ${XSOLVE_GITHUB_REPOSITORY_NAME} develop"
+    execute "cd .."
+    run_mocks
+}
+
+
+# SPA
+function run_spa {
+    execute "cd ${APP_PATH}/${DOCKER_DIR}"
+    execute "test -f docker-compose.yml && docker-compose down || echo '[OK] docker-compose.yml not found. Probably not build yet.'"
+ #   execute "test -f  .env && rm -f .env || echo 'Ok. File not present'"
+ #   execute "cp .env.${ENV_TYPE}.dist .env"
+    execute "test -f docker-compose.yml && rm -f docker-compose.yml || echo 'Ok. File not present'"
+    execute "cp docker-compose.yml.dist docker-compose.yml"
+    execute "docker-compose build"
+    execute "docker-compose up -d"
+    execute-if ${DOCKER_TAIL_LOG} "docker-compose logs -f --tail=100"
+}
+function spa {
+    execute "cd ${APP_PATH}"
+    execute-if ${GIT_UPDATE} "git fetch --all"
+    execute-if ${GIT_UPDATE} "git checkout develop"
+    execute-if ${GIT_UPDATE} "git pull ${XSOLVE_GITHUB_REPOSITORY_NAME} develop"
+    execute "cd .."
+    run_spa
+}
+
+function build-git-base {
+    REPO=$1
+
+    execute "cd ${REPO}"
+    execute "git remote rename origin ${XSOLVE_GITHUB_REPOSITORY_NAME}"
+    execute "cd ${SCRIPT_DIR}"
+}
+
+
+# Git init
+function git-init {
+    SSH_TAKAMOL_EG_API=${SSH_AUTH}:${XSOLVE_GITHUB_USER}/${TAKAMOL_EG_API_REPO_NAME}
+    SSH_TAKAMOL_EG_SPA=${SSH_AUTH}:${XSOLVE_GITHUB_USER}/${TAKAMOL_EG_SPA_REPO_NAME}
+    SSH_TAKAMOL_CA_API=${SSH_AUTH}:${XSOLVE_GITHUB_USER}/${TAKAMOL_CA_API_REPO_NAME}
+    SSH_TAKAMOL_CA_SPA=${SSH_AUTH}:${XSOLVE_GITHUB_USER}/${TAKAMOL_CA_SPA_REPO_NAME}
+    SSH_TAKAMOL_EG_MOCKS=${SSH_AUTH}:${XSOLVE_GITHUB_USER}/${TAKAMOL_EG_MOCKS_REPO_NAME}
+
+    execute "test ! -d ${TAKAMOL_EG_API_DIR} && git clone ${SSH_TAKAMOL_EG_API} ${TAKAMOL_EG_API_DIR} && build-git-base "${TAKAMOL_EG_API_DIR}" || echo 'Repo already cloned'"
+
+    execute "test ! -d ${TAKAMOL_EG_SPA_DIR} && git clone ${SSH_TAKAMOL_EG_SPA} ${TAKAMOL_EG_SPA_DIR} && build-git-base "${TAKAMOL_EG_SPA_DIR}" || echo 'Repo already cloned'"
+
+    execute "test ! -d ${TAKAMOL_CA_API_DIR} && git clone ${SSH_TAKAMOL_CA_API} ${TAKAMOL_CA_API_DIR} && build-git-base "${TAKAMOL_CA_API_DIR}" || echo 'Repo already cloned'"
+
+    execute "test ! -d ${TAKAMOL_CA_SPA_DIR} && git clone ${SSH_TAKAMOL_CA_SPA} ${TAKAMOL_CA_SPA_DIR} && build-git-base "${TAKAMOL_CA_SPA_DIR}" || echo 'Repo already cloned'"
+
+    execute "test ! -d ${TAKAMOL_EG_MOCKS_DIR} && git clone ${SSH_TAKAMOL_EG_MOCKS} ${TAKAMOL_EG_MOCKS_DIR} && build-git-base "${TAKAMOL_EG_MOCKS_DIR}" || echo 'Repo already cloned'"
+}
+
+# Docker exec
+# $1 - workdir
+# $2 - docker-compose command
+function docker-exec {
+    execute "cd $1/${DOCKER_DIR} && docker-compose $2"
+    execute "cd ${SCRIPT_DIR}"
+}
+
+# Docker exec all
+# $1 - docker-compose command
+function docker-exec-all {
+    docker-exec ${TAKAMOL_EG_API_DIR} "$1"
+    docker-exec ${TAKAMOL_EG_SPA_DIR} "$1"
+    docker-exec ${TAKAMOL_CA_API_DIR} "$1"
+    docker-exec ${TAKAMOL_CA_SPA_DIR} "$1"
+    docker-exec ${TAKAMOL_EG_MOCKS_DIR} "$1"
+}
+
+
+## HELP
+if [ -z $1 ] ;then
+    help
+    exit
+fi
+if [ -n $1 ] && [ $1 == "--help" ] ;then
+    help
+    exit
+fi
+
+## DOCKER EXEC
+if [ -n "$1" ] && [ "$1" == "exec" ] ;then
+    check-variables
+    docker-exec-all "$2"
+    exit 0
+fi
+
+## GIT INIT
+if [ -n "$1" ] && [ "$1" == "git-init" ] ;then
+    check-variables
+    git-init "$2"
+    exit 0
+fi
+
+## UPGRADE
+if [ -z "$1" ] ;then
+    echo
+    echo "First parameter is required - choose: 'api', 'spa' or 'mocks'"
+    echo
+    exit 1
+fi
+
+APP_TYPE=$1
+
+if [ -z "$2" ] ;then
+    echo
+    echo "Second parameter is required - project, choose: 'eg' or 'ca'"
+    echo
+    exit 1
+fi
+
+APP_PROJECT=$2
+
+if [ -z "$3" ] ;then
+    echo
+    echo "Third parameter is required - choose: 'run' or 'upgrade'"
+    echo
+    exit 1
+fi
+
+APP_ACTION=$3
+
+function incorrect-parameters {
+    echo
+    echo-color-red "Incorrect type of parameters."
+    echo
+    exit 1
+}
+
+if [ "${APP_TYPE}" == "api" ] ;then
+    if [ "${APP_PROJECT}" == "eg" ]; then
+        APP_PATH=$TAKAMOL_EG_API_DIR
+    elif [ "${APP_PROJECT}" == "ca" ]; then
+        APP_PATH=$TAKAMOL_CA_API_DIR
+    else
+        incorrect-parameters
+    fi
+
+    if [ "${APP_ACTION}" == "run" ] ;then
+        run_api
+    elif [ "${APP_ACTION}" == "upgrade" ] ;then
+        api
+    else
+        incorrect-parameters
+    fi
+elif [ "${APP_TYPE}" == "spa" ] ; then
+    if [ "${APP_PROJECT}" == "eg" ]; then
+        APP_PATH=$TAKAMOL_EG_SPA_DIR
+    elif [ "${APP_PROJECT}" == "ca" ]; then
+        APP_PATH=$TAKAMOL_CA_SPA_DIR
+    else
+        incorrect-parameters
+    fi
+
+    if [ "${APP_ACTION}" == "run" ] ;then
+        run_spa
+    elif [ "${APP_ACTION}" == "upgrade" ] ;then
+        spa
+    else
+        incorrect-parameters
+    fi
+elif [ "${APP_TYPE}" == "mocks" ] ; then
+    if [ "${APP_PROJECT}" == "eg" ]; then
+        APP_PATH=$TAKAMOL_EG_MOCKS_DIR
+    else
+        incorrect-parameters
+    fi
+
+    if [ "${APP_ACTION}" == "run" ] ;then
+        run_mocks
+    elif [ "${APP_ACTION}" == "upgrade" ] ;then
+        mocks
+    else
+        incorrect-parameters
+    fi
+else
+    incorrect-parameters
+fi
+

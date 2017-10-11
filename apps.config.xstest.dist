@@ -1,0 +1,37 @@
+# e.g. upstream, origin, xsolve-pl, other...
+XSOLVE_GITHUB_REPOSITORY_NAME=xsolve-pl
+
+# Project root directory with '/'
+# e.g. takamol-eg-api/
+TAKAMOL_EG_API_DIR=takamol-eg-api/
+TAKAMOL_EG_SPA_DIR=takamol-eg-spa/
+TAKAMOL_CA_API_DIR=takamol-ca-api/
+TAKAMOL_CA_SPA_DIR=takamol-ca-spa/
+TAKAMOL_EG_MOCKS_DIR=takamol-eg-mocks/
+
+# Project repository name
+# e.g. takamol-eg-api.git
+TAKAMOL_EG_API_REPO_NAME=takamol-eg-api.git
+TAKAMOL_EG_SPA_REPO_NAME=takamol-eg-spa.git
+TAKAMOL_CA_API_REPO_NAME=takamol-ca-api.git
+TAKAMOL_CA_SPA_REPO_NAME=takamol-ca-spa.git
+TAKAMOL_EG_MOCKS_REPO_NAME=takamol-eg-mocks.git
+
+# Settings
+# ENV_TYPE: dev | xstest | xspreview
+ENV_TYPE=xstest
+
+# GIT_UPDATE: 1 | 0
+GIT_UPDATE=1
+
+# DEBUG: 1 | 0
+DEBUG=0
+
+#DOCKER_TAIL_LOG: 1 | 0
+DOCKER_TAIL_LOG=0
+
+# Version control system ssh prefix
+SSH_AUTH=git@github.com
+DOCKER_DIR=.docker
+XSOLVE_GITHUB_USER=xsolve-pl
+GIT_DEVELOP_BRANCH=develop

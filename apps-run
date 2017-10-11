@@ -1,0 +1,7 @@
+#!/bin/bash
+
+./run-takamol-ca-api && \
+./run-takamol-ca-spa && \
+./run-takamol-eg-api && \
+./run-takamol-eg-spa  && \
+./run-takamol-eg-mocks

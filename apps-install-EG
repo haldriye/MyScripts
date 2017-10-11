@@ -1,0 +1,6 @@
+#!/bin/bash
+
+sudo ./apps git-init && \
+sudo ./upgrade-takamol-eg-api && \
+sudo ./upgrade-takamol-eg-spa  && \
+sudo ./upgrade-takamol-eg-mocks

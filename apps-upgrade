@@ -1,0 +1,7 @@
+#!/bin/bash
+
+./upgrade-takamol-ca-api && \
+./upgrade-takamol-ca-spa && \
+./upgrade-takamol-eg-api && \
+./upgrade-takamol-eg-spa  && \
+./upgrade-takamol-eg-mocks
