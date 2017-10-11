@@ -1,0 +1,5 @@
+#!/bin/bash
+sudo cp ENV_Bluvalt/.env takamol-ca-api/.docker/.env
+sudo cp ENV_Bluvalt/.env_ca_spa takamol-ca-spa/.docker/.env
+sudo cp ENV_Bluvalt/.env_eg_spa takamol-eg-spa/.docker/.env
+sudo cp ENV_Bluvalt/.env_eg_api takamol-eg-api/.docker/.env
