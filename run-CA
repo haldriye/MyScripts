@@ -1,0 +1,4 @@
+#!/bin/bash
+
+sudo ./run-takamol-ca-spa
+sudo ./run-takamol-ca-api

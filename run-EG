@@ -1,0 +1,4 @@
+#!/bin/bash
+
+sudo ./run-takamol-eg-spa
+sudo ./run-takamol-eg-api
